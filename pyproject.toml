@@ -1,0 +1,79 @@
+[project]
+name = "voice-chat"
+version = "0.1.0"
+description = "A voice-activated AI assistant with wake word detection and extensible tool system"
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    # LLM
+    "google-genai>=1.56.0",
+
+    # Audio
+    "faster-whisper>=1.2.1",
+    "pvporcupine>=4.0.1",
+    "silero-vad>=6.2.0",
+    "sounddevice>=0.5.3",
+    "numpy>=2.0.0",
+
+    # TTS
+    "elevenlabs>=2.27.0",
+
+    # CLI
+    "typer>=0.15.0",
+    "rich>=13.9.0",
+
+    # Utilities
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
+    "respx>=0.22.0",
+    "ruff>=0.8.0",
+]
+
+[project.scripts]
+voice-chat = "voice_chat.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/voice_chat"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "integration: marks tests that require API keys (deselect with '-m not integration')",
+    "slow: marks tests as slow (deselect with '-m not slow')",
+]
+testpaths = ["tests"]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["src/voice_chat"]
+omit = ["*/tests/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["E501"]
