@@ -222,6 +222,79 @@ def version() -> None:
     console.print(f"voice-chat version {__version__}")
 
 
+@app.command()
+def test_wake_word(
+    wake_word: str = typer.Option("jarvis", "--wake-word", "-w", help="Wake word to test"),
+) -> None:
+    """Test wake word detection in isolation."""
+    import time
+
+    import numpy as np
+
+    from voice_chat.audio.input import AudioInput
+    from voice_chat.audio.wake_word import StreamingWakeWordDetector, WakeWordDetection
+    from voice_chat.config import get_settings
+
+    settings = get_settings()
+
+    console.print(f"[bold]Testing wake word detection[/bold]")
+    console.print(f"Wake word: {wake_word}")
+    console.print(f"Sample rate: {settings.sample_rate} Hz")
+
+    detections = []
+
+    def on_wake_word(detection: WakeWordDetection) -> None:
+        detections.append(detection)
+        console.print(f"\n[bold green]DETECTED: {detection.keyword}![/bold green]")
+
+    try:
+        detector = StreamingWakeWordDetector(
+            keywords=[wake_word],
+            on_wake_word=on_wake_word,
+        )
+        console.print(f"Porcupine frame length: {detector.frame_length}")
+        console.print(f"Porcupine sample rate: {detector.sample_rate}")
+    except ValueError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        console.print("Make sure PICOVOICE_ACCESS_KEY is set in .env")
+        raise typer.Exit(1)
+
+    audio_input = AudioInput(
+        sample_rate=settings.sample_rate,
+        chunk_size=detector.frame_length,  # Match Porcupine's frame length
+    )
+
+    console.print(f"\n[dim]Say '{wake_word}' - Ctrl+C to stop[/dim]")
+    console.print("[dim]Audio levels will show as dots[/dim]\n")
+
+    detector.start()
+    audio_input.start()
+
+    chunks_processed = 0
+    try:
+        while True:
+            audio = audio_input.read(timeout=0.1)
+            if audio is not None:
+                chunks_processed += 1
+                # Show audio level indicator
+                level = np.abs(audio).mean()
+                if level > 0.01:
+                    console.print(".", end="", style="green")
+                elif level > 0.001:
+                    console.print(".", end="", style="yellow")
+
+                detection = detector.process_chunk(audio)
+                if detection:
+                    console.print(f"\n[bold green]Wake word detected![/bold green]")
+
+    except KeyboardInterrupt:
+        console.print(f"\n\nProcessed {chunks_processed} audio chunks")
+        console.print(f"Detections: {len(detections)}")
+    finally:
+        audio_input.stop()
+        detector.cleanup()
+
+
 @app.callback()
 def main(
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose output"),
