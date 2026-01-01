@@ -22,7 +22,7 @@ class TestSettings:
         assert settings.gemini_api_key == ""
         assert settings.elevenlabs_api_key == ""
         assert settings.language_mode == LanguageMode.AUTO
-        assert settings.gemini_model == "gemini-2.0-flash"
+        assert settings.gemini_model == "gemini-3-flash-preview"
         assert settings.max_agent_iterations == 10
         assert settings.sample_rate == 16000
 

@@ -114,14 +114,16 @@ class GeminiClient:
                 # Handle tool calls from assistant
                 tool_calls = msg.get("tool_calls", [])
                 for tc in tool_calls:
-                    parts.append(
-                        types.Part(
-                            function_call=types.FunctionCall(
-                                name=tc["name"],
-                                args=tc["args"],
-                            )
+                    part_kwargs: dict[str, Any] = {
+                        "function_call": types.FunctionCall(
+                            name=tc["name"],
+                            args=tc["args"],
                         )
-                    )
+                    }
+                    # Include thought_signature for Gemini 3 models
+                    if tc.get("thought_signature"):
+                        part_kwargs["thought_signature"] = tc["thought_signature"]
+                    parts.append(types.Part(**part_kwargs))
 
                 contents.append(types.Content(role="model", parts=parts))
             elif role == "tool":
@@ -196,10 +198,13 @@ class GeminiClient:
                     text += part.text
                 elif part.function_call:
                     fc = part.function_call
+                    # Capture thought_signature for Gemini 3 models
+                    thought_sig = getattr(part, "thought_signature", None)
                     tool_calls.append(
                         ToolCall(
                             name=fc.name,
                             arguments=dict(fc.args) if fc.args else {},
+                            thought_signature=thought_sig,
                         )
                     )
 

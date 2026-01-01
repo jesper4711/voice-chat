@@ -23,6 +23,7 @@ class ToolCall:
     name: str
     arguments: dict[str, Any]
     id: str = field(default_factory=lambda: str(uuid4())[:8])
+    thought_signature: str | None = None  # Required for Gemini 3
 
 
 @dataclass
@@ -95,7 +96,12 @@ class ConversationState:
                         "role": "assistant",
                         "content": msg.content,
                         "tool_calls": [
-                            {"name": tc.name, "args": tc.arguments, "id": tc.id}
+                            {
+                                "name": tc.name,
+                                "args": tc.arguments,
+                                "id": tc.id,
+                                "thought_signature": tc.thought_signature,
+                            }
                             for tc in msg.tool_calls
                         ],
                     })

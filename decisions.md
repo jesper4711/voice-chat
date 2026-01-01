@@ -17,7 +17,24 @@ This document tracks key architectural decisions made during development and any
 
 ---
 
-### D2: google-genai SDK for Gemini Integration
+### D2: Gemini 3 Flash Preview as Primary LLM
+
+**Decision**: Use `gemini-3-flash-preview` as the default model
+
+**Rationale** (from spec.md):
+- Best balance of cost ($0.50/M input, $3.00/M output) and capability
+- 1M token context window
+- Good multilingual support for English/Swedish
+
+**Alternatives considered**:
+- `gemini-2.5-pro`: Better for complex coding, but more expensive
+- `gemini-2.5-flash`: Budget option, but less capable
+
+**Override**: Set `GEMINI_MODEL` env var to use a different model
+
+---
+
+### D3: google-genai SDK for Gemini Integration
 
 **Decision**: Use the `google-genai` SDK instead of `google-generativeai`
 
@@ -30,10 +47,11 @@ This document tracks key architectural decisions made during development and any
 **Implementation Notes**:
 - Tools must be passed inside `GenerateContentConfig`, not as separate parameter
 - Structured output uses `response_mime_type="application/json"` + `response_schema`
+- **Gemini 3 requires `thought_signature`**: When the model makes a function call, it includes a `thought_signature` that must be preserved and sent back with tool results. Without this, the API returns a 400 error. See: https://ai.google.dev/gemini-api/docs/thought-signatures
 
 ---
 
-### D3: Agent Loop Design
+### D4: Agent Loop Design
 
 **Decision**: Simple iterative loop with max iterations limit
 
@@ -48,7 +66,7 @@ This document tracks key architectural decisions made during development and any
 
 ---
 
-### D4: Tool Registry Pattern
+### D5: Tool Registry Pattern
 
 **Decision**: Central registry with handler functions, not classes
 
@@ -62,7 +80,7 @@ This document tracks key architectural decisions made during development and any
 
 ---
 
-### D5: Silero VAD for End-of-Speech Detection
+### D6: Silero VAD for End-of-Speech Detection
 
 **Decision**: Use Silero VAD instead of simple energy-based detection
 
@@ -79,7 +97,7 @@ This document tracks key architectural decisions made during development and any
 
 ---
 
-### D6: Porcupine for Wake Word Detection
+### D7: Porcupine for Wake Word Detection
 
 **Decision**: Use Picovoice Porcupine for wake word
 
@@ -95,7 +113,7 @@ This document tracks key architectural decisions made during development and any
 
 ---
 
-### D7: State Machine for Voice Assistant
+### D8: State Machine for Voice Assistant
 
 **Decision**: Simple enum-based state machine (IDLE → LISTENING → PROCESSING → SPEAKING)
 
@@ -114,7 +132,7 @@ This document tracks key architectural decisions made during development and any
 
 ---
 
-### D8: MP3 for TTS Audio Format
+### D9: MP3 for TTS Audio Format
 
 **Decision**: ElevenLabs outputs MP3, decode to PCM for playback
 
@@ -127,7 +145,7 @@ This document tracks key architectural decisions made during development and any
 
 ---
 
-### D9: Async-First Architecture
+### D10: Async-First Architecture
 
 **Decision**: Use async/await throughout the codebase
 

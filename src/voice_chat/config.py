@@ -33,7 +33,7 @@ class Settings(BaseSettings):
 
     # LLM Settings
     gemini_model: str = Field(
-        default="gemini-2.0-flash",
+        default="gemini-3-flash-preview",
         description="Gemini model to use",
     )
     max_agent_iterations: int = Field(
