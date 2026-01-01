@@ -54,6 +54,37 @@ INACTIVITY_TIMEOUT_SECONDS=1800  # 1800 = 30 min, 3600 = 1 hour
 
 This prevents context from growing unbounded while maintaining enough history for natural conversations.
 
+## Available Tools
+
+The assistant has 11 built-in tools:
+
+### Time
+| Tool | Description |
+|------|-------------|
+| `get_current_time` | Get current time (with timezone support) |
+| `get_current_date` | Get current date with day of week |
+
+### System (macOS)
+| Tool | Description |
+|------|-------------|
+| `execute_command` | Run shell commands |
+| `open_application` | Open apps by name |
+| `control_volume` | Get/set/mute system volume |
+
+### Spotify (macOS)
+| Tool | Description |
+|------|-------------|
+| `spotify_control` | Play, pause, next, previous |
+| `spotify_now_playing` | Get current track info |
+| `spotify_search_and_play` | Search and play music |
+| `spotify_set_volume` | Set Spotify volume |
+
+### Web Search
+| Tool | Description |
+|------|-------------|
+| `web_search` | Search the web (requires Tavily API key) |
+| `get_webpage_content` | Fetch webpage content |
+
 ## Environment Variables
 
 Copy `.env.example` to `.env` and configure:
@@ -63,6 +94,9 @@ Copy `.env.example` to `.env` and configure:
 GEMINI_API_KEY=your_key
 ELEVENLABS_API_KEY=your_key
 PICOVOICE_ACCESS_KEY=your_key
+
+# Optional: Web search (free at https://app.tavily.com)
+TAVILY_API_KEY=tvly-your_key
 
 # Optional: Memory settings
 MAX_CONVERSATION_TURNS=20        # Number of turns to keep (0 = unlimited)
