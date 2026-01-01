@@ -174,7 +174,7 @@ class WakeWordDetector:
 
     def cleanup(self) -> None:
         """Clean up Porcupine resources."""
-        if self._porcupine is not None:
+        if hasattr(self, "_porcupine") and self._porcupine is not None:
             self._porcupine.delete()
             self._porcupine = None
 
