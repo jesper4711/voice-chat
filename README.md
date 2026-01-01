@@ -46,6 +46,12 @@ The assistant maintains conversation context with automatic memory management:
 - **Sliding window**: Keeps the last 20 conversation turns (user + assistant pairs)
 - **Inactivity timeout**: Clears history after 30 minutes of silence
 
+Configure in `.env`:
+```bash
+MAX_CONVERSATION_TURNS=20        # Increase for longer memory, 0 = unlimited
+INACTIVITY_TIMEOUT_SECONDS=1800  # 1800 = 30 min, 3600 = 1 hour
+```
+
 This prevents context from growing unbounded while maintaining enough history for natural conversations.
 
 ## Environment Variables
