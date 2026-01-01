@@ -1,5 +1,7 @@
 """Unit tests for conversation state."""
 
+from datetime import datetime, timedelta
+
 import pytest
 
 from voice_chat.agent.state import (
@@ -197,3 +199,102 @@ class TestToolResult:
         """Can mark tool result as failure."""
         result = ToolResult(tool_call_id="1", name="test", result="error", success=False)
         assert result.success is False
+
+
+class TestSlidingWindow:
+    """Tests for sliding window memory management."""
+
+    def test_messages_trimmed_to_max_turns(self) -> None:
+        """Messages are trimmed when exceeding max_turns."""
+        state = ConversationState(max_turns=3)
+
+        # Add 5 turns (user + assistant pairs)
+        for i in range(5):
+            state.add_user_message(f"User message {i}")
+            state.add_assistant_message(f"Assistant response {i}")
+
+        # Should only have last 3 turns (6 messages)
+        assert state.turn_count == 3
+        assert len(state.messages) == 6
+
+        # Oldest messages should be removed
+        assert state.messages[0].content == "User message 2"
+        assert state.messages[1].content == "Assistant response 2"
+
+    def test_max_turns_zero_disables_trimming(self) -> None:
+        """max_turns=0 disables trimming."""
+        state = ConversationState(max_turns=0)
+
+        for i in range(10):
+            state.add_user_message(f"Message {i}")
+
+        assert state.turn_count == 10
+
+    def test_tool_calls_kept_with_turn(self) -> None:
+        """Tool calls and results are kept with their turn."""
+        state = ConversationState(max_turns=2)
+
+        # Turn 1: user + assistant with tool + tool result + final response
+        state.add_user_message("Turn 1")
+        state.add_assistant_message("Checking", tool_calls=[ToolCall(name="test", arguments={})])
+        state.add_tool_results([ToolResult(tool_call_id="1", name="test", result="done")])
+        state.add_assistant_message("Done with turn 1")
+
+        # Turn 2
+        state.add_user_message("Turn 2")
+        state.add_assistant_message("Response 2")
+
+        # Turn 3 - should trigger trimming
+        state.add_user_message("Turn 3")
+        state.add_assistant_message("Response 3")
+
+        # Should have turns 2 and 3 (turn 1 with tool calls removed)
+        assert state.turn_count == 2
+        user_messages = [m for m in state.messages if m.role == MessageRole.USER]
+        assert user_messages[0].content == "Turn 2"
+
+
+class TestInactivityTimeout:
+    """Tests for inactivity timeout."""
+
+    def test_history_cleared_after_timeout(self) -> None:
+        """History is cleared after inactivity timeout."""
+        state = ConversationState(inactivity_timeout_seconds=60)
+
+        state.add_user_message("Hello")
+        state.add_assistant_message("Hi")
+
+        # Simulate time passing
+        state.last_interaction = datetime.now() - timedelta(seconds=120)
+
+        # Next message should trigger clear
+        state.add_user_message("New message")
+
+        # Only the new message should exist
+        assert len(state.messages) == 1
+        assert state.messages[0].content == "New message"
+
+    def test_history_kept_within_timeout(self) -> None:
+        """History is kept within timeout period."""
+        state = ConversationState(inactivity_timeout_seconds=60)
+
+        state.add_user_message("Hello")
+        state.add_assistant_message("Hi")
+
+        # Simulate small time passing (within timeout)
+        state.last_interaction = datetime.now() - timedelta(seconds=30)
+
+        state.add_user_message("Follow up")
+
+        # All messages should exist
+        assert len(state.messages) == 3
+
+    def test_last_interaction_updated_on_message(self) -> None:
+        """last_interaction is updated when adding messages."""
+        state = ConversationState()
+
+        before = state.last_interaction
+        state.add_user_message("Hello")
+        after = state.last_interaction
+
+        assert after >= before

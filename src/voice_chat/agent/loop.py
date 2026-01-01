@@ -49,7 +49,10 @@ class AgentLoop:
         self.llm = llm or GeminiClient()
         self.tools = tools or get_default_registry()
         self.max_iterations = max_iterations or settings.max_agent_iterations
-        self.state = ConversationState()
+        self.state = ConversationState(
+            max_turns=settings.max_conversation_turns,
+            inactivity_timeout_seconds=settings.inactivity_timeout_seconds,
+        )
         self.system_prompt = get_system_prompt(settings.language_mode)
 
     async def run(self, user_message: str) -> str:

@@ -64,6 +64,16 @@ class Settings(BaseSettings):
         description="Seconds of silence to detect end of speech",
     )
 
+    # Memory Settings
+    max_conversation_turns: int = Field(
+        default=20,
+        description="Maximum conversation turns to keep in memory",
+    )
+    inactivity_timeout_seconds: float = Field(
+        default=1800,
+        description="Seconds of inactivity before clearing conversation history (default: 30 min)",
+    )
+
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",

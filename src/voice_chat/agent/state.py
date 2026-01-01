@@ -54,10 +54,57 @@ class ConversationState:
     session_id: UUID = field(default_factory=uuid4)
     messages: list[Message] = field(default_factory=list)
     created_at: datetime = field(default_factory=datetime.now)
+    last_interaction: datetime = field(default_factory=datetime.now)
+
+    # Memory settings (can be overridden)
+    max_turns: int = 20  # 1 turn = user + assistant exchange
+    inactivity_timeout_seconds: float = 1800  # 30 minutes
+
+    def _check_inactivity_timeout(self) -> None:
+        """Clear history if inactivity timeout exceeded."""
+        elapsed = (datetime.now() - self.last_interaction).total_seconds()
+        if elapsed > self.inactivity_timeout_seconds and self.messages:
+            self.clear()
+
+    def _trim_to_max_turns(self) -> None:
+        """Trim messages to keep only the last max_turns."""
+        if self.max_turns <= 0:
+            return
+
+        # Count turns (user messages)
+        user_count = sum(1 for m in self.messages if m.role == MessageRole.USER)
+
+        if user_count <= self.max_turns:
+            return
+
+        # Find how many turns to remove
+        turns_to_remove = user_count - self.max_turns
+
+        # Remove oldest turns (user + following assistant/tool messages)
+        removed_turns = 0
+        new_messages: list[Message] = []
+        skip_until_next_user = True  # Skip messages until we've removed enough turns
+
+        for msg in self.messages:
+            if msg.role == MessageRole.USER:
+                if removed_turns < turns_to_remove:
+                    removed_turns += 1
+                    skip_until_next_user = True
+                    continue
+                else:
+                    skip_until_next_user = False
+
+            if not skip_until_next_user:
+                new_messages.append(msg)
+
+        self.messages = new_messages
 
     def add_user_message(self, content: str) -> None:
         """Add a user message to the conversation."""
+        self._check_inactivity_timeout()
+        self.last_interaction = datetime.now()
         self.messages.append(Message(role=MessageRole.USER, content=content))
+        self._trim_to_max_turns()
 
     def add_assistant_message(
         self,
