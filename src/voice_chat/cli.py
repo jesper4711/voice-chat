@@ -86,6 +86,12 @@ async def _chat_loop(speak_enabled: bool = False, listen: bool = False) -> None:
             response = await agent.run(user_input)
             console.print(response)
 
+            # Debug: show conversation memory status
+            turns = agent.state.turn_count
+            msgs = len(agent.state.messages)
+            max_turns = agent.state.max_turns
+            console.print(f"[dim]({turns}/{max_turns} turns, {msgs} msgs)[/dim]")
+
             # Speak response if enabled
             if speak_enabled and tts and audio_output:
                 try:
