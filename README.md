@@ -39,14 +39,32 @@ voice-chat voice --no-wake-word
 voice-chat voice --wake-word computer
 ```
 
+## Conversation Memory
+
+The assistant maintains conversation context with automatic memory management:
+
+- **Sliding window**: Keeps the last 20 conversation turns (user + assistant pairs)
+- **Inactivity timeout**: Clears history after 30 minutes of silence
+
+This prevents context from growing unbounded while maintaining enough history for natural conversations.
+
 ## Environment Variables
 
 Copy `.env.example` to `.env` and configure:
 
-```
+```bash
+# Required API keys
 GEMINI_API_KEY=your_key
 ELEVENLABS_API_KEY=your_key
 PICOVOICE_ACCESS_KEY=your_key
+
+# Optional: Memory settings
+MAX_CONVERSATION_TURNS=20        # Number of turns to keep (0 = unlimited)
+INACTIVITY_TIMEOUT_SECONDS=1800  # Clear history after 30 min of silence
+
+# Optional: Audio settings
+SILENCE_THRESHOLD_SECONDS=1.5    # Silence duration to detect end of speech
+WHISPER_MODEL=base               # STT model: tiny, base, small, medium, large-v3
 ```
 
 ## Development
