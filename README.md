@@ -23,14 +23,20 @@ uv sync --all-extras
 # Text chat mode
 voice-chat chat
 
-# With voice output
+# With voice output (TTS)
 voice-chat chat --speak
-
-# With voice input and output
-voice-chat chat --speak --listen
 
 # Single command
 voice-chat run "What time is it?"
+
+# Full voice mode with wake word ("Jarvis")
+voice-chat voice
+
+# Voice mode without wake word (always listening)
+voice-chat voice --no-wake-word
+
+# Voice mode with custom wake word
+voice-chat voice --wake-word computer
 ```
 
 ## Environment Variables
