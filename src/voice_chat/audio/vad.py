@@ -151,6 +151,9 @@ class VoiceActivityDetector:
 class StreamingVAD:
     """Streaming VAD for real-time speech detection."""
 
+    # Minimum audio duration (in seconds) to accumulate before running VAD
+    MIN_PROCESS_DURATION = 0.3  # 300ms
+
     def __init__(
         self,
         sample_rate: int | None = None,
@@ -176,16 +179,18 @@ class StreamingVAD:
 
         # State tracking
         self._is_speaking = False
-        self._silence_samples = 0
+        self._silence_duration = 0.0  # Track in seconds for clarity
         self._speech_samples = 0
         self._audio_buffer: list[np.ndarray] = []
+        self._pending_chunks: list[np.ndarray] = []  # Buffer chunks before VAD processing
 
     def reset(self) -> None:
         """Reset VAD state."""
         self._is_speaking = False
-        self._silence_samples = 0
+        self._silence_duration = 0.0
         self._speech_samples = 0
         self._audio_buffer.clear()
+        self._pending_chunks.clear()
 
     def process(self, audio: np.ndarray) -> tuple[bool, bool, np.ndarray | None]:
         """Process audio chunk and detect speech boundaries.
@@ -199,37 +204,56 @@ class StreamingVAD:
                 - speech_ended: True if speech just ended
                 - complete_audio: If speech_ended, the complete speech audio
         """
-        is_speech = self._vad.detect(audio)
+        # Accumulate audio in pending buffer
+        self._pending_chunks.append(audio.copy())
+
+        # Calculate pending audio duration
+        pending_samples = sum(len(chunk) for chunk in self._pending_chunks)
+        pending_duration = pending_samples / self.sample_rate
+
+        # Only run VAD when we have enough audio
+        if pending_duration < self.MIN_PROCESS_DURATION:
+            # Not enough audio yet, just buffer it
+            if self._is_speaking:
+                # If we're already speaking, still add to main buffer
+                self._audio_buffer.append(audio.copy())
+            return False, False, None
+
+        # Combine pending chunks for VAD processing
+        pending_audio = np.concatenate(self._pending_chunks)
+        self._pending_chunks.clear()
+
+        # Run VAD on the accumulated audio
+        is_speech = self._vad.detect(pending_audio)
+
         speech_started = False
         speech_ended = False
         complete_audio = None
 
-        silence_samples_threshold = int(self.silence_threshold * self.sample_rate)
-
         if is_speech:
-            self._silence_samples = 0
-            self._speech_samples += len(audio)
+            self._silence_duration = 0.0
+            self._speech_samples += len(pending_audio)
 
             if not self._is_speaking:
                 self._is_speaking = True
                 speech_started = True
                 self._audio_buffer.clear()
 
-            self._audio_buffer.append(audio.copy())
+            self._audio_buffer.append(pending_audio)
 
         else:
             if self._is_speaking:
-                self._silence_samples += len(audio)
-                self._audio_buffer.append(audio.copy())  # Include trailing silence
+                self._silence_duration += pending_duration
+                self._audio_buffer.append(pending_audio)  # Include trailing silence
 
-                if self._silence_samples >= silence_samples_threshold:
+                if self._silence_duration >= self.silence_threshold:
                     # Speech ended
                     speech_ended = True
                     self._is_speaking = False
                     complete_audio = np.concatenate(self._audio_buffer)
                     self._audio_buffer.clear()
                     self._speech_samples = 0
-                    self._silence_samples = 0
+                    self._silence_duration = 0.0
 
         return speech_started, speech_ended, complete_audio
 
