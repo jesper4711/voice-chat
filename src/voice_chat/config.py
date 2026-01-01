@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     gemini_api_key: str = Field(default="", description="Google Gemini API key")
     elevenlabs_api_key: str = Field(default="", description="ElevenLabs API key")
     picovoice_access_key: str = Field(default="", description="Picovoice access key")
+    tavily_api_key: str = Field(default="", description="Tavily API key for web search")
 
     # Language
     language_mode: LanguageMode = Field(

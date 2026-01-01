@@ -136,6 +136,7 @@ def get_default_registry() -> ToolRegistry:
     from voice_chat.tools.spotify import get_spotify_tools
     from voice_chat.tools.system import get_system_tools
     from voice_chat.tools.time import get_time_tools
+    from voice_chat.tools.web import get_web_tools
 
     registry = ToolRegistry()
 
@@ -147,6 +148,9 @@ def get_default_registry() -> ToolRegistry:
         registry.register(tool)
 
     for tool in get_spotify_tools():
+        registry.register(tool)
+
+    for tool in get_web_tools():
         registry.register(tool)
 
     return registry
